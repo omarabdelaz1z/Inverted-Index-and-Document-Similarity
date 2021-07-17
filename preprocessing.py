@@ -5,12 +5,13 @@
 """
 
 import re
+from functools import reduce
 
 
 class Preprocessor:
     @staticmethod
     def remove_stopwords(content, lang='english'):
-        stopwords = {'english': {'ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once',
+        stopwords = {'english': {'ourselves', 'hers', 'between', 'yourself', '', 'a', 'but', 'again', 'there', 'about', 'once',
                                  'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for',
                                  'do', 'its', 'yours', 'such', 'into', 'of', 'most', 'itself', 'other', 'off', 'is',
                                  's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves', 'until',
@@ -33,8 +34,8 @@ class Preprocessor:
     def case_fold(content):
         return [term.lower() for term in content]
 
-    def preprocess(self, content):
-        tokenized = self.tokenize(content)
-        case_folded = self.case_fold(tokenized)
-        no_stopwords = self.remove_stopwords(case_folded)
-        return no_stopwords
+    def preprocess(self, data, tokenize=True, case_folded=True, stopwords=False):
+        pipeline = [self.tokenize, self.case_fold, self.remove_stopwords]
+        mask = [tokenize, case_folded, stopwords]
+        filtered_pipeline = [function for function, boolean in zip(pipeline, mask) if boolean]
+        return reduce(lambda content, function: function(content), filtered_pipeline, data)
