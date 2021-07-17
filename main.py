@@ -1,5 +1,5 @@
-import glob
-import inverted_index as ii
+from glob import glob
+from inverted_index import InvertedIndex
 
 
 def fetch_content(filename):
@@ -11,14 +11,12 @@ def fetch_content(filename):
 
 if __name__ == '__main__':
     path = "tmp/*.txt"  # can be changed.
-    files = glob.glob(path)
+    files = glob(path)
     documents = []
 
     for file in files:
         documents.append(fetch_content(file))
 
-    inverted_index = ii.InvertedIndex()
-    inverted_index.build_index(documents)
-
-    inverted_index.get_term_info('requirements')
-
+    inverted_index = InvertedIndex()
+    inverted_index.build(documents)
+    print(inverted_index.find('different system should results are in cost and can only computing elements'))
