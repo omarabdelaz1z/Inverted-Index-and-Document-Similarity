@@ -6,6 +6,7 @@
   Keep in mind that each posting is inserted in ascending order by document id to help in query processing.
   Such queries uses INTERSECTION, UNION, NOT, Etc..
 """
+from CommonMeasures import log_tf
 
 
 class Posting:
@@ -16,7 +17,23 @@ class Posting:
         self.previous = None
 
     def __repr__(self):
-        return f"Posting['document_id': '{self.document_id}', 'term_frequency': '{self.term_frequency}']"
+        return str(self.info)
+
+    @property
+    def log_tf(self):
+        return log_tf(self.term_frequency)
+
+    @property
+    def raw_tf(self):
+        return self.term_frequency
+
+    @property
+    def info(self):
+        return {
+            'doc_id': self.document_id,
+            'raw_tf': self.raw_tf,
+            'log_tf': self.log_tf,
+        }
 
 
 class PostingList:
@@ -26,13 +43,7 @@ class PostingList:
         self.length = 0
 
     def __repr__(self):
-        values = []
-        current = self.head
-        while current:
-            values.append(str(current.document_id))
-            current = current.next
-
-        return ' -> '.join(values) if len(values) != 0 else 'Empty'
+        return str(self.postings)
 
     def insert(self, document_id, term_frequency):
         posting = Posting(document_id=document_id, term_frequency=term_frequency)
@@ -72,11 +83,12 @@ class PostingList:
             current = current.next
         return False
 
-    def get_postings(self):
+    @property
+    def postings(self):
         postings = []
         current = self.head
         while current:
-            postings.append(current.__repr__())
+            postings.append(current)
             current = current.next
 
-        return postings
+        return {posting.document_id: posting.info for posting in postings}
