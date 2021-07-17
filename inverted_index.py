@@ -1,17 +1,18 @@
 """
 The inverted index consists of terms and its entry such as document frequency, posting list of each term.
 """
-
-from preprocessing import Preprocessor
-from posting_list import PostingList
+from CommonMeasures import idf
+from Preprocessing import Preprocessor
+from Postings import PostingList
 from collections import Counter
-import re
 
 
 class InvertedIndex:
     def __init__(self):
         self.index = {}
         self.preprocessor = Preprocessor()
+        self.collection_size = 0
+        self.documents = None
 
     def __repr__(self):
         representation = "{\n\t"
@@ -21,9 +22,11 @@ class InvertedIndex:
 
         return representation
 
-    def build(self, documents):
-        for i, document in enumerate(documents):  # used i as an id for a document
-            preprocessed_content = self.preprocessor.preprocess(document)
+    def build_index(self, documents):
+        self.collection_size = len(documents)
+        self.documents = documents
+        for i, (document_name, content) in enumerate(documents.items()):  # used i as an id for a document
+            preprocessed_content = self.preprocessor.preprocess(content, stopwords=True)
             occurrences = Counter(preprocessed_content)
 
             for term in preprocessed_content:
@@ -37,27 +40,34 @@ class InvertedIndex:
                     self.index[term].add(document_id=i, term_frequency=term_frequency)
 
     def term_info(self, term):
+        info = {}
         entry = self.index.get(term)
         if entry is None:
-            return "Term Doesn't Exist"
+            return info
 
-        print(f"- Term: {term}\n"
-              f"- Document Frequency: {entry.document_frequency}\n"
-              f"- Postings List: {entry.posting_list.__repr__()}")
+        info['df'] = entry.document_frequency
+        info['idf'] = idf(self.collection_size, entry.document_frequency)
+        posting_list = entry.posting_list
 
-        postings = entry.posting_list.get_postings()
-        for posting in postings:
-            print(f"\t{posting}")
+        if posting_list.length > 0:
+            postings = {}
+            for key, value in posting_list.postings.items():
+                postings[key] = value
+
+            info['postings_list'] = postings
+        else:
+            info['postings_list'] = {}
+
+        return info
 
     def find(self, query):
-        terms = re.split("\\W+", query)
+        prepared_query = self.prepare_query(query)
         posting_lists = []
 
-        for term in terms:
+        for term in prepared_query:
             entry = self.index.get(term)
-            if not entry:
-                continue
-            posting_lists.append(self.index.get(term).posting_list)
+            if entry:
+                posting_lists.append(self.index.get(term).posting_list)
 
         if len(posting_lists) == 1:
             return posting_lists.pop()
@@ -70,7 +80,11 @@ class InvertedIndex:
                 answer = intersect(initial, current)
                 initial = answer
 
-            return answer
+            return answer.postings
+
+    def prepare_query(self, query):
+        prepared_query = self.preprocessor.preprocess(query, stopwords=False)
+        return prepared_query
 
 
 class Term:
@@ -85,7 +99,6 @@ class Term:
 
     def __repr__(self):
         return f"({self.term}, {self.document_frequency}, {self.posting_list})"
-        # return f"Term['term':'{self.term}', 'document frequency':{self.document_frequency}]"
 
     def __hash__(self):
         return hash(self.term)
