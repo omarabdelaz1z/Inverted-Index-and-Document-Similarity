@@ -1,11 +1,10 @@
-import pandas as pd
-from Preprocessing import Preprocessor
 from collections import Counter
-import CommonMeasures
+from pandas import DataFrame, Series
+from utils import log_tf, idf, normalize, dot_product, Preprocessor
 
 
 class TermDocumentMatrix:
-    def __init__(self, documents):
+    def __init__(self, documents: dict):
         self.preprocessor = Preprocessor()
         self.documents = documents
         self.collection_size = len(documents)
@@ -13,9 +12,9 @@ class TermDocumentMatrix:
 
     @property
     def incidence(self):
-        df = pd.DataFrame(data=self.documents_with_occurrences.values(),
-                          index=self.raw_headers,
-                          columns=self.column_headers).fillna(0)
+        df = DataFrame(data=self.documents_with_occurrences.values(),
+                       index=self.raw_headers,
+                       columns=self.column_headers).fillna(0)
 
         df = df.loc[:] >= 1
         df.replace(False, 0, inplace=True)
@@ -24,17 +23,17 @@ class TermDocumentMatrix:
 
     @property
     def count(self):
-        return pd.DataFrame(data=self.documents_with_occurrences.values(),
-                            index=self.raw_headers,
-                            columns=self.column_headers).fillna(0)
+        return DataFrame(data=self.documents_with_occurrences.values(),
+                         index=self.raw_headers,
+                         columns=self.column_headers).fillna(0)
 
     @property
     def tf_idf(self):
-        def calculate_log_tf_series(series):
-            return series.apply(CommonMeasures.log_tf)
+        def calculate_log_tf_series(series: Series):
+            return series.apply(log_tf)
 
-        def calculate_idf_series(series):
-            return series.apply(lambda a: CommonMeasures.idf(self.collection_size, a))
+        def calculate_idf_series(series: Series):
+            return series.apply(lambda a: idf(self.collection_size, a))
 
         df = self.count
 
@@ -48,7 +47,7 @@ class TermDocumentMatrix:
     @property
     def tf_idf_normalized(self):
         tf_idf_df = self.tf_idf
-        tf_idf_df.apply(CommonMeasures.normalize, axis=0)
+        tf_idf_df.apply(normalize, axis=0)
         return tf_idf_df
 
     def prepare_tdm(self):
@@ -62,11 +61,17 @@ class TermDocumentMatrix:
 
         return self.documents.keys(), terms, documents_with_occurrences
 
-    # Currently supports two documents
-    def cosine_similarity(self, d1, d2):
+    def cosine_similarity(self, d1: str, d2: str):
+        """
+        Find the cosine similarity on two documents. The documents must be in the object.
+
+        :param d1: String Document 1
+        :param d2: String Document 2
+        :return: A scalar decimal value of the similarity between documents
+        """
         tf_idf = self.tf_idf_normalized
         s1, s2 = tf_idf.loc[d1], tf_idf.loc[d2]
-        return CommonMeasures.dot_product(s1, s2)
+        return dot_product(s1, s2)
 
 
 if __name__ == '__main__':
@@ -90,4 +95,4 @@ if __name__ == '__main__':
     # print("Term Document (Normalized) Weight Matrix")
     # print(tdm.tf_idf_normalized)
     # print("Cosine Similarity: ")
-    print(tdm.cosine_similarity('doc_trump', 'doc_putin'))
+    print(tdm.cosine_similarity('doc_trump', 'doc_election'))
