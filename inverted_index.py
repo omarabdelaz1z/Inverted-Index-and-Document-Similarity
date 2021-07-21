@@ -1,10 +1,6 @@
-"""
-The inverted index consists of terms and its entry such as document frequency, posting list of each term.
-"""
-from CommonMeasures import idf
-from Preprocessing import Preprocessor
-from Postings import PostingList
 from collections import Counter
+from posting import PostingList
+from utils import idf, Preprocessor
 
 
 class InvertedIndex:
@@ -22,9 +18,10 @@ class InvertedIndex:
 
         return representation
 
-    def build_index(self, documents):
+    def build_index(self, documents: dict):
         self.collection_size = len(documents)
         self.documents = documents
+
         for i, (document_name, content) in enumerate(documents.items()):  # used i as an id for a document
             preprocessed_content = self.preprocessor.preprocess(content, stopwords=True)
             occurrences = Counter(preprocessed_content)
@@ -36,7 +33,7 @@ class InvertedIndex:
                 if entry not in self.index:
                     self.index[term] = entry
 
-                if not (self.index[term].posting_list.is_exist(document_id=i)):
+                if not (self.index[term].posting_list.exists(document_id=i)):
                     self.index[term].add(document_id=i, term_frequency=term_frequency)
 
     def term_info(self, term):
@@ -61,6 +58,11 @@ class InvertedIndex:
         return info
 
     def find(self, query):
+        """
+        Find the documents given query.
+        :param query: string.
+        :return: Documents
+        """
         prepared_query = self.prepare_query(query)
         posting_lists = []
 
@@ -82,18 +84,19 @@ class InvertedIndex:
 
             return answer.postings
 
-    def prepare_query(self, query):
+    def prepare_query(self, query: str):
         prepared_query = self.preprocessor.preprocess(query, stopwords=False)
+
         return prepared_query
 
 
 class Term:
-    def __init__(self, term):
+    def __init__(self, term: str):
         self.term = term
         self.posting_list = PostingList()
         self.document_frequency = 0
 
-    def add(self, document_id, term_frequency):
+    def add(self, document_id: int, term_frequency: int):
         self.posting_list.insert(document_id, term_frequency)
         self.document_frequency = self.posting_list.length
 
@@ -110,8 +113,14 @@ class Term:
         return not (self == other)
 
 
-# AND Queries
-def intersect(P1, P2):
+def intersect(P1: PostingList, P2: PostingList):
+    """
+    Find the intersection between two posting lists. (AND Queries)
+
+    :param P1: the first posting list.
+    :param P2: the second posting list
+    :return answer: a posting list of all common postings between the given postings lists.
+    """
     answer = PostingList()
     current1, current2 = P1.head, P2.head
 
@@ -129,8 +138,14 @@ def intersect(P1, P2):
     return answer
 
 
-# OR Queries
-def union(P1, P2):
+def union(P1: PostingList, P2: PostingList):
+    """
+    Find the union between two posting lists. (OR Queries)
+
+    :param P1: the first posting list.
+    :param P2: the second posting list
+    :return answer: a posting list of all postings between the given postings lists.
+    """
     answer = PostingList()
     current1, current2 = P1.head, P2.head
 
