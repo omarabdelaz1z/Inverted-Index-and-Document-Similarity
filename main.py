@@ -1,16 +1,16 @@
 from glob import glob
-from inverted_index import InvertedIndex
 from json import dumps
+from inverted_index import InvertedIndex
 
 
-def fetch_content(filename):
+def fetch_content(filename: str):
     with open(filename, encoding='utf-8', mode='r') as file:
         content = file.read()
         file.close()
         return content
 
 
-def as_json(data, indent=3):
+def as_json(data: dict, indent=3):
     return dumps(data, indent=indent)
 
 
